@@ -8,6 +8,7 @@ venv/
 # Environment
 .env
 .env.*
+!.env.example
 
 # IDE
 .idea/
@@ -20,3 +21,5 @@ venv/
 .coverage
 htmlcov/
 
+# Alembic
+# alembic/versions/*.py
