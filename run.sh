@@ -2,22 +2,28 @@
 set -e
 
 echo "Ожидание базы данных..."
-# Ждем, пока БД поднимется (простая проверка через Python)
+# Вызываем python, чтобы он сам собрал строку подключения через наш config.py
 python -c "
-import time, asyncpg, asyncio, os
-from dotenv import load_dotenv
-load_dotenv()
-url = os.getenv('DATABASE_URL', '').replace('postgresql+asyncpg://', 'postgresql://')
+import asyncio
+import asyncpg
+from app.config import get_settings
+
 async def check():
+    settings = get_settings()
+    # Убираем префикс драйвера, так как asyncpg.connect его не понимает
+    db_url = settings.db_url.replace('postgresql+asyncpg://', 'postgresql://')
+
     for i in range(30):
         try:
-            conn = await asyncpg.connect(url)
+            conn = await asyncpg.connect(db_url)
             await conn.close()
             print('База данных готова!')
             return
-        except Exception:
-            time.sleep(1)
-    raise Exception('База данных не поднялась за 30 секунд')
+        except Exception as e:
+            print(f'Ошибка подключения: {e}. Ждем...')
+            await asyncio.sleep(2)
+    raise Exception('База данных не поднялась за 60 секунд')
+
 asyncio.run(check())
 "
 
@@ -25,5 +31,4 @@ echo "Применение миграций Alembic..."
 alembic upgrade head
 
 echo "Запуск веб-сервера Uvicorn..."
-# --host 0.0.0.0 обязателен для доступа извне контейнера
 exec uvicorn app.main:app --host 0.0.0.0 --port 8000

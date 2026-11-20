@@ -1,21 +1,23 @@
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
 class Settings(BaseSettings):
-    # Основные настройки приложения
     app_name: str = "Events Aggregator"
     debug: bool = True
 
-    # База данных
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/events_db"
+    # Основная настройка (для локального запуска)
+    database_url: str | None = None
 
-    # Внешний Events Provider API
+    # Переменные, которые передает LMS
+    postgres_connection_string: str | None = None
+    postgres_host: str | None = None
+    postgres_port: str | None = None
+    postgres_username: str | None = None
+    postgres_password: str | None = None
+    postgres_database_name: str | None = None
+
     events_provider_url: str = "http://events-provider.dev-2.python-labs.ru"
     events_provider_api_key: str = ""
-
-    # Настройки синхронизации
     sync_interval_hours: float = 24
 
     model_config = SettingsConfigDict(
@@ -24,6 +26,31 @@ class Settings(BaseSettings):
         extra="ignore"
     )
 
+    @property
+    def db_url(self) -> str:
+        """Собирает URL для БД из переменных LMS или берет локальный."""
+        # 1. Если LMS дал готовую строку — используем её
+        if self.postgres_connection_string:
+            url = self.postgres_connection_string
+            # Убеждаемся, что драйвер asyncpg указан
+            if url.startswith("postgres://"):
+                return url.replace("postgres://", "postgresql+asyncpg://", 1)
+            if url.startswith("postgresql://") and "+asyncpg" not in url:
+                return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+            return url
+
+        # 2. Если есть отдельные переменные — собираем строку
+        if self.postgres_host:
+            return (
+                f"postgresql+asyncpg://{self.postgres_username}:{self.postgres_password}"
+                f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_database_name}"
+            )
+
+        # 3. Локальный запуск (из .env)
+        if self.database_url:
+            return self.database_url
+
+        raise ValueError("Не удалось определить настройки базы данных!")
 
 @lru_cache
 def get_settings() -> Settings:
