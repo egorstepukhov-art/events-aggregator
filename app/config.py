@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     postgres_password: str | None = None
     postgres_database_name: str | None = None
 
-    events_provider_url: str = "http://events-provider.dev-2.python-labs.ru"
+    events_provider_url: str = "http://student-system-events-provider-web.student-system-events-provider.svc:8000"
     events_provider_api_key: str = ""
     sync_interval_hours: float = 24
 
