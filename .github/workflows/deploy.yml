@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   # 1. СНАЧАЛА ЗАПУСКАЕМ ЛИНТЕР И ТЕСТЫ
