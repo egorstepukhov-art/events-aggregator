@@ -2,7 +2,9 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 
 from app.api import events, sync, tickets
 from app.config import get_settings
@@ -15,10 +17,12 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Запускаем фоновый воркер синхронизации при старте приложения
     task = asyncio.create_task(periodic_sync_loop())
     try:
         yield
     finally:
+        # Корректно останавливаем воркер при выключении
         task.cancel()
         try:
             await task
@@ -32,6 +36,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Перехватываем ошибки валидации (422) и возвращаем 400, как требует API
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={"detail": exc.errors()},
+    )
+
+# Подключаем роутеры
 app.include_router(sync.router)
 app.include_router(events.router)
 app.include_router(tickets.router)
