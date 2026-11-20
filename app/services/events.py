@@ -22,9 +22,7 @@ class GetEventsUsecase:
         self.events = events
 
     async def do(self, *, date_from: str | None, page: int, page_size: int):
-        return await self.events.list(
-            date_from=date_from, page=page, page_size=page_size
-        )
+        return await self.events.list(date_from=date_from, page=page, page_size=page_size)
 
 
 class GetEventUsecase:

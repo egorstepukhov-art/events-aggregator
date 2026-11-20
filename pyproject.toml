@@ -3,7 +3,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

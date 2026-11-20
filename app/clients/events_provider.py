@@ -16,7 +16,9 @@ class EventsProviderClient:
             "Accept": "application/json",
         }
 
-    async def get_events(self, changed_at: str = "2000-01-01", cursor: str | None = None) -> dict[str, Any]:
+    async def get_events(
+        self, changed_at: str = "2000-01-01", cursor: str | None = None
+    ) -> dict[str, Any]:
         if cursor:
             url = cursor
             params = None

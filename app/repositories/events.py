@@ -1,11 +1,11 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Event, Place
+from app.models import Event, Place, SyncMeta
 
 
 class EventRepository:
@@ -81,8 +81,6 @@ class SyncMetaRepository:
         self.session = session
 
     async def get(self):
-        from app.models import SyncMeta
-
         result = await self.session.execute(select(SyncMeta).limit(1))
         return result.scalar_one_or_none()
 
@@ -93,8 +91,6 @@ class SyncMetaRepository:
         status: str,
         message: str = "",
     ) -> None:
-        from app.models import SyncMeta
-
         meta = await self.get()
         if not meta:
             meta = SyncMeta()
@@ -103,6 +99,6 @@ class SyncMetaRepository:
         if last_changed_at is not None:
             meta.last_changed_at = last_changed_at
 
-        meta.last_sync_time = datetime.now(tz=None)
+        meta.last_sync_time = datetime.now(UTC)
         meta.sync_status = status
         meta.message = message

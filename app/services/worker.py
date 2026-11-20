@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.config import get_settings
 from app.database import async_session
@@ -29,7 +29,7 @@ async def periodic_sync_loop() -> None:
     await asyncio.sleep(5)
 
     while True:
-        started = datetime.now(timezone.utc)
+        started = datetime.now(UTC)
         logger.info("Starting periodic sync at %s", started.isoformat())
         await run_sync_once()
         logger.info("Periodic sync finished, sleeping %s seconds", interval)

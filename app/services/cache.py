@@ -1,10 +1,7 @@
 import time
-from typing import Generic, TypeVar
-
-T = TypeVar("T")
 
 
-class TTLCache(Generic[T]):
+class TTLCache[T]:
     """Простой in-memory TTL-кэш. Не потокобезопасен, но для asyncio-сервиса ок."""
 
     def __init__(self, ttl_seconds: int = 30):

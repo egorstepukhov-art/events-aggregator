@@ -11,9 +11,7 @@ class TicketRepository:
         self.session = session
 
     async def get_by_ticket_id(self, ticket_id: UUID) -> Ticket | None:
-        result = await self.session.execute(
-            select(Ticket).where(Ticket.ticket_id == ticket_id)
-        )
+        result = await self.session.execute(select(Ticket).where(Ticket.ticket_id == ticket_id))
         return result.scalar_one_or_none()
 
     async def create(
