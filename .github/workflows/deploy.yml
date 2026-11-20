@@ -13,7 +13,6 @@ permissions:
   packages: write
 
 jobs:
-  # 1. СНАЧАЛА ЗАПУСКАЕМ ЛИНТЕР И ТЕСТЫ
   lint-and-test:
     runs-on: ubuntu-latest
     services:
@@ -55,9 +54,8 @@ jobs:
           EVENTS_PROVIDER_API_KEY: test-key
         run: pytest -v
 
-  # 2. СБОРКА ОБРАЗА (ТОЛЬКО ЕСЛИ ТЕСТЫ И ЛИНТЕР ПРОШЛИ)
   build:
-    needs: lint-and-test  # <--- ВОТ ОНО, ТРЕБОВАНИЕ ЗАДАНИЯ!
+    needs: lint-and-test
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.tags }}
@@ -97,7 +95,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # 3. ДЕПЛОЙ В LMS (ТОЛЬКО ЕСЛИ ОБРАЗ СОБРАЛСЯ)
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -107,7 +104,13 @@ jobs:
           HTTP_CODE=$(curl -s -o response.txt -w "%{http_code}" -X POST \
             -H "Content-Type: application/json" \
             -H "X-API-Key: ${{ secrets.LMS_API_KEY }}" \
-            -d '{"image":"ghcr.io/${{ needs.build.outputs.repo }}:${{ github.sha }}","repository":"${{ github.repository }}"}' \
+            -d '{
+              "image":"ghcr.io/${{ needs.build.outputs.repo }}:${{ github.sha }}",
+              "repository":"${{ github.repository }}",
+              "env": {
+                "EVENTS_PROVIDER_API_KEY": "${{ secrets.LMS_API_KEY }}"
+              }
+            }' \
             https://lms.python-labs.ru/api/deploy-requests)
           if [ "$HTTP_CODE" != "200" ]; then
             echo "Deployment failed with status code $HTTP_CODE"
