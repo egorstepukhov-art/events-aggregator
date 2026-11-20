@@ -46,9 +46,12 @@ async def get_events(
     usecase = GetEventsUsecase(repo)
     events, total = await usecase.do(date_from=date_from, page=page, page_size=page_size)
 
-    base = str(request.base_url).rstrip("/")
-    next_url = f"{base}/api/events?page={page + 1}&page_size={page_size}" if page * page_size < total else None
-    prev_url = f"{base}/api/events?page={page - 1}&page_size={page_size}" if page > 1 else None
+    next_url = None
+    prev_url = None
+    if page * page_size < total:
+        next_url = str(request.url.include_query_params(page=page + 1, page_size=page_size))
+    if page > 1:
+        prev_url = str(request.url.include_query_params(page=page - 1, page_size=page_size))
 
     return {
         "count": total,

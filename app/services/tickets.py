@@ -1,9 +1,9 @@
 from uuid import UUID
 
+from app.enums import EventStatus
 from app.repositories.events import EventRepository
 from app.repositories.tickets import TicketRepository
-from app.services.events import EventNotFound, EventUnexpectedStatus
-from app.services.protocols import EventsProviderClientProtocol
+from app.services.events import EventNotFound, EventUnexpectedStatus, _seats_cache
 
 
 class TicketNotFound(Exception):
@@ -11,12 +11,7 @@ class TicketNotFound(Exception):
 
 
 class CreateTicketUsecase:
-    def __init__(
-        self,
-        client: EventsProviderClientProtocol,
-        events: EventRepository,
-        tickets: TicketRepository,
-    ):
+    def __init__(self, client, events: EventRepository, tickets: TicketRepository):
         self.client = client
         self.events = events
         self.tickets = tickets
@@ -33,7 +28,7 @@ class CreateTicketUsecase:
         event = await self.events.get(event_id)
         if not event:
             raise EventNotFound
-        if event.status != "published":
+        if event.status != EventStatus.PUBLISHED:
             raise EventUnexpectedStatus
 
         response = await self.client.register(
@@ -53,15 +48,12 @@ class CreateTicketUsecase:
             email=email,
             seat=seat,
         )
+        _seats_cache.invalidate(str(event_id))
         return ticket_id
 
 
 class CancelTicketUsecase:
-    def __init__(
-        self,
-        client: EventsProviderClientProtocol,
-        tickets: TicketRepository,
-    ):
+    def __init__(self, client, tickets: TicketRepository):
         self.client = client
         self.tickets = tickets
 
@@ -75,3 +67,4 @@ class CancelTicketUsecase:
             ticket_id=str(ticket.ticket_id),
         )
         await self.tickets.delete(ticket)
+        _seats_cache.invalidate(str(ticket.event_id))

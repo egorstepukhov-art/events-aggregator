@@ -1,11 +1,12 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.enums import EventStatus, SyncStatus
 
 
 class Place(Base):
@@ -30,7 +31,7 @@ class Event(Base):
     place_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("places.id"), nullable=False)
     event_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     registration_deadline: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    status: Mapped[EventStatus] = mapped_column(String(50), nullable=False)
     number_of_visitors: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
@@ -49,7 +50,10 @@ class Ticket(Base):
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     seat: Mapped[str] = mapped_column(String(20), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
 
 
 class SyncMeta(Base):
@@ -58,5 +62,5 @@ class SyncMeta(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     last_sync_time: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    sync_status: Mapped[str] = mapped_column(String(50), default="idle")
+    sync_status: Mapped[SyncStatus] = mapped_column(String(50), default=SyncStatus.IDLE)
     message: Mapped[str | None] = mapped_column(Text, nullable=True)

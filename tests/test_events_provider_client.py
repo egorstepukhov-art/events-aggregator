@@ -4,13 +4,12 @@ import httpx
 import pytest
 
 from app.clients.events_provider import EventsProviderClient
+from app.config import get_settings
 
 
 @pytest.fixture
 def client(monkeypatch):
     """Клиент с подменёнными настройками (URL и ключ)."""
-    from app.config import get_settings
-
     get_settings.cache_clear()
     monkeypatch.setenv("EVENTS_PROVIDER_URL", "http://events-provider.test")
     monkeypatch.setenv("EVENTS_PROVIDER_API_KEY", "test-api-key")

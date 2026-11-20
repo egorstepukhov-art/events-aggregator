@@ -8,24 +8,24 @@ from app.services.sync import SyncService
 
 logger = logging.getLogger(__name__)
 
+_sync_lock = asyncio.Lock()
+
 
 async def run_sync_once() -> None:
-    """Одна синхронизация в отдельной сессии."""
-    async with async_session() as session:
-        service = SyncService(session)
-        try:
-            result = await service.sync_events()
-            logger.info("Periodic sync done: %s", result)
-        except Exception:
-            logger.exception("Periodic sync failed")
+    async with _sync_lock:
+        async with async_session() as session:
+            service = SyncService(session)
+            try:
+                result = await service.sync_events()
+                logger.info("Periodic sync done: %s", result)
+            except Exception:
+                logger.exception("Periodic sync failed")
 
 
 async def periodic_sync_loop() -> None:
-    """Бесконечный цикл: синхронизация раз в N часов."""
     settings = get_settings()
     interval = settings.sync_interval_hours * 3600
 
-    # Небольшая задержка на старте, чтобы приложение успело подняться
     await asyncio.sleep(5)
 
     while True:

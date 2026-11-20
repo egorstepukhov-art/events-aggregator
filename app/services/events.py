@@ -1,9 +1,9 @@
 from uuid import UUID
 
+from app.enums import EventStatus
 from app.models import Event
 from app.repositories.events import EventRepository
 from app.services.cache import TTLCache
-from app.services.protocols import EventsProviderClientProtocol
 
 
 class EventNotFound(Exception):
@@ -14,7 +14,6 @@ class EventUnexpectedStatus(Exception):
     pass
 
 
-# Кэш мест на 30 секунд (по требованию задания)
 _seats_cache: TTLCache[list[str]] = TTLCache(ttl_seconds=30)
 
 
@@ -40,7 +39,7 @@ class GetEventUsecase:
 
 
 class GetSeatsUsecase:
-    def __init__(self, events: EventRepository, client: EventsProviderClientProtocol):
+    def __init__(self, events: EventRepository, client):
         self.events = events
         self.client = client
 
@@ -48,7 +47,7 @@ class GetSeatsUsecase:
         event = await self.events.get(event_id)
         if not event:
             raise EventNotFound
-        if event.status != "published":
+        if event.status != EventStatus.PUBLISHED:
             raise EventUnexpectedStatus
 
         cache_key = str(event_id)

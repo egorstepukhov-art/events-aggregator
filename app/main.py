@@ -17,12 +17,10 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Запускаем фоновый воркер синхронизации при старте приложения
     task = asyncio.create_task(periodic_sync_loop())
     try:
         yield
     finally:
-        # Корректно останавливаем воркер при выключении
         task.cancel()
         try:
             await task
@@ -36,7 +34,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Перехватываем ошибки валидации (422) и возвращаем 400, как требует API
+
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
@@ -44,7 +42,7 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"detail": exc.errors()},
     )
 
-# Подключаем роутеры
+
 app.include_router(sync.router)
 app.include_router(events.router)
 app.include_router(tickets.router)
